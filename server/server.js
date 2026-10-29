@@ -1,10 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const slotRoutes = require('./routes/slotRoutes');
+const authRoutes = require('./routes/authRoutes');
 const Slot = require('./models/Slot');
+const User = require('./models/User');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +27,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/slots', slotRoutes);
+app.use('/api/auth', authRoutes);
 
 /**
  * Seed function to ensure 12 parking slots (P1 to P12) exist in MongoDB.
@@ -54,13 +58,49 @@ const seedInitialSlots = async () => {
   }
 };
 
+/**
+ * Predefine Campus Admin Account in MongoDB
+ * Credentials:
+ *   Email: admin@college.edu
+ *   Password: admin123
+ */
+const seedDefaultAdmin = async () => {
+  try {
+    const adminEmail = 'admin@college.edu';
+    const existingAdmin = await User.findOne({ email: adminEmail });
+
+    if (!existingAdmin) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('admin123', salt);
+
+      await User.create({
+        name: 'Campus Administrator',
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'Admin',
+      });
+      console.log('Successfully created predefined Admin: admin@college.edu / admin123');
+    } else {
+      // Ensure existing admin account retains the Admin role
+      if (existingAdmin.role !== 'Admin') {
+        existingAdmin.role = 'Admin';
+        await existingAdmin.save();
+      }
+      console.log('Predefined Admin account ready (admin@college.edu).');
+    }
+  } catch (error) {
+    console.error('Error seeding predefined admin account:', error.message);
+  }
+};
+
 // Connect to MongoDB and start the Express server
 mongoose
   .connect(MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB successfully.');
-    // Check and seed initial slots if needed
+    // Check and seed initial slots & predefined admin
     await seedInitialSlots();
+    await seedDefaultAdmin();
 
     // Start server
     app.listen(PORT, () => {
