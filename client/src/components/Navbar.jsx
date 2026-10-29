@@ -1,13 +1,18 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path) => location.pathname === path;
   const isAdmin = isAuthenticated && user?.role === 'Admin';
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <header className="navbar-container">
@@ -52,7 +57,7 @@ function Navbar() {
                   </span>
                 </div>
               </div>
-              <button onClick={logout} className="btn-logout" title="Sign out of account">
+              <button type="button" onClick={handleLogout} className="btn-logout" title="Sign out of account">
                 Logout
               </button>
             </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -6,6 +6,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('parking_auth_token') || null);
   const [loading, setLoading] = useState(true);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('parking_auth_token');
+    setToken(null);
+    setUser(null);
+  }, []);
 
   // Validate existing token on mount
   useEffect(() => {
@@ -43,7 +49,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     verifyUser();
-  }, []);
+  }, [logout]);
 
   const login = async (email, password) => {
     const response = await fetch('/api/auth/login', {
@@ -83,12 +89,6 @@ export const AuthProvider = ({ children }) => {
     setToken(data.token);
     setUser(data.user);
     return data.user;
-  };
-
-  const logout = () => {
-    localStorage.removeItem('parking_auth_token');
-    setToken(null);
-    setUser(null);
   };
 
   return (

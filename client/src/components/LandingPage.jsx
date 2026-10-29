@@ -1,28 +1,9 @@
-import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 function LandingPage() {
   const { isAuthenticated, user } = useAuth();
-  const [stats, setStats] = useState({ total: 12, available: 0, occupied: 0, loading: true });
   const isAdmin = isAuthenticated && user?.role === 'Admin';
-
-  // Fetch quick live stats for landing page overview
-  useEffect(() => {
-    fetch('/api/slots')
-      .then((res) => res.json())
-      .then((res) => {
-        if (res.success && Array.isArray(res.data)) {
-          const total = res.data.length;
-          const available = res.data.filter((s) => s.status === 'Available').length;
-          const occupied = total - available;
-          setStats({ total, available, occupied, loading: false });
-        }
-      })
-      .catch(() => {
-        setStats({ total: 12, available: 8, occupied: 4, loading: false });
-      });
-  }, []);
 
   return (
     <div className="landing-page">
@@ -39,7 +20,7 @@ function LandingPage() {
           </h1>
 
           <p className="hero-subtitle">
-            A centralized digital parking management system for our college campus. Students, faculty, and visitors can check live slot occupancy anytime, while authorized Campus Admins manage and update parking allocations in real time.
+            A centralized digital parking management system for our college campus. Signed-in students, faculty, and visitors can check live slot occupancy, while authorized Campus Admins manage and update parking allocations in real time.
           </p>
 
           <div className="hero-actions">
@@ -66,27 +47,6 @@ function LandingPage() {
             )}
           </div>
 
-          {/* Quick Real-Time Metrics Strip */}
-          <div className="hero-stats-card">
-            <div className="stat-item">
-              <span className="stat-label">Total Campus Slots</span>
-              <span className="stat-value">{stats.loading ? '...' : stats.total}</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-label">Available Now</span>
-              <span className="stat-value available-color">
-                {stats.loading ? '...' : stats.available}
-              </span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-label">Occupied</span>
-              <span className="stat-value occupied-color">
-                {stats.loading ? '...' : stats.occupied}
-              </span>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -116,7 +76,7 @@ function LandingPage() {
             </div>
             <h3 className="feature-title">Student & Faculty View</h3>
             <p className="feature-desc">
-              Students and campus visitors can view live parking availability anytime from their mobile phones or laptops.
+              Signed-in students and campus visitors can view live parking availability from their mobile phones or laptops.
             </p>
           </div>
 

@@ -9,7 +9,7 @@ function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -22,32 +22,6 @@ function Login() {
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Failed to sign in. Please verify your email and password.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Helper for evaluation / testing demo credentials
-  const handleQuickDemo = async (demoRole) => {
-    setError('');
-    setLoading(true);
-
-    const demoEmail = `${demoRole.toLowerCase()}@college.edu`;
-    const demoPassword = 'password123';
-    const demoName = `Campus ${demoRole}`;
-
-    try {
-      // First try to login
-      await login(demoEmail, demoPassword);
-      navigate('/dashboard');
-    } catch {
-      // If demo account doesn't exist yet, automatically register and log in
-      try {
-        await register(demoName, demoEmail, demoPassword, demoRole);
-        navigate('/dashboard');
-      } catch (regErr) {
-        setError(`Could not initialize demo account: ${regErr.message}`);
-      }
     } finally {
       setLoading(false);
     }
@@ -125,22 +99,6 @@ function Login() {
             )}
           </button>
         </form>
-
-        {/* Quick Demo Sign In for Students */}
-        <div className="demo-login-section">
-          <div className="divider-text">
-            <span>Or Quick Student Demo</span>
-          </div>
-          <button
-            type="button"
-            className="btn-demo-pill btn-demo-pill--single"
-            onClick={() => handleQuickDemo('Student')}
-            disabled={loading}
-            title="Sign in as Student (View-Only Status)"
-          >
-            🎓 Demo Student (View-Only)
-          </button>
-        </div>
 
         <div className="auth-footer-prompt">
           Don't have an account yet?{' '}
