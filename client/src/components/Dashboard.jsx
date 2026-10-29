@@ -17,7 +17,6 @@ function Dashboard({
 }) {
   return (
     <header className="dashboard-header">
-      {/* Title & Tagline */}
       <div className="title-area">
         <div className="title-with-badge">
           <span className="campus-badge">Campus Facility</span>
@@ -30,12 +29,11 @@ function Dashboard({
         </div>
         <p className="main-subtitle">
           {canControl
-            ? 'Administrator Control: Click any slot to toggle its occupancy status or reset all campus slots.'
+            ? 'Administrator Control: Check in vehicles, check out occupied slots, or reset the parking layout.'
             : 'Live Status Monitor: Displays real-time parking slot availability for students, faculty, and visitors.'}
         </p>
       </div>
 
-      {/* Summary Metric Cards */}
       <div className="summary-grid">
         <SummaryCard
           title="Total Parking Slots"
@@ -72,7 +70,6 @@ function Dashboard({
         />
       </div>
 
-      {/* Control Actions: Filters & Reset Button (Admin Only) */}
       <div className="controls-bar">
         <div className="filter-group">
           <span className="filter-label">Filter View:</span>

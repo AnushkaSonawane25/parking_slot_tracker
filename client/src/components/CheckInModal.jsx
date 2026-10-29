@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 function CheckInModal({ isOpen, slot, onClose, onConfirm, isSubmitting }) {
   const [vehicleNumber, setVehicleNumber] = useState('');
@@ -24,7 +24,7 @@ function CheckInModal({ isOpen, slot, onClose, onConfirm, isSubmitting }) {
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true">
-      <div className="modal-container checkin-modal">
+      <div className="modal-container">
         <div className="modal-header-row">
           <div className="modal-icon-wrapper modal-icon-wrapper--checkin">
             🚗
@@ -117,4 +117,3 @@ function CheckInModal({ isOpen, slot, onClose, onConfirm, isSubmitting }) {
 }
 
 export default CheckInModal;
-

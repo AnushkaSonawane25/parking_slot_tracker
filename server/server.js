@@ -13,11 +13,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/parking_tracker';
 
-// Middleware
-app.use(cors()); // Allows frontend running on another port (e.g., 5173) to communicate
-app.use(express.json()); // Parses incoming JSON request bodies
+app.use(cors());
+app.use(express.json());
 
-// Root endpoint to verify server is running
 app.get('/', (req, res) => {
   res.send({
     message: 'Parking Slot Tracker API is running smoothly',
@@ -25,37 +23,24 @@ app.get('/', (req, res) => {
   });
 });
 
-// API Routes
 app.use('/api/slots', slotRoutes);
 app.use('/api/auth', authRoutes);
 
-/**
- * Seed function to ensure 12 parking slots (P1 to P12) exist in MongoDB.
- * If slots already exist, it will NOT duplicate them.
- */
 const seedInitialSlots = async () => {
-  try {
-    const existingCount = await Slot.countDocuments();
-    if (existingCount === 0) {
-      console.log('No slots found in database. Initializing 12 parking slots (P1 to P12)...');
-      
-      const defaultSlots = [];
-      for (let i = 1; i <= 12; i++) {
-        defaultSlots.push({
-          slotNumber: `P${i}`,
-          slotOrder: i,
-          status: 'Available',
-        });
-      }
-
-      await Slot.insertMany(defaultSlots);
-      console.log('Successfully seeded 12 parking slots into MongoDB.');
-    } else {
-      console.log(`Database already contains ${existingCount} parking slots.`);
-    }
-  } catch (error) {
-    console.error('Error during initial slot seeding:', error.message);
+  const existingCount = await Slot.countDocuments();
+  if (existingCount) {
+    console.log(`Database already contains ${existingCount} parking slots.`);
+    return;
   }
+
+  const slots = Array.from({ length: 12 }, (_, index) => ({
+    slotNumber: `P${index + 1}`,
+    slotOrder: index + 1,
+    status: 'Available',
+  }));
+
+  await Slot.insertMany(slots);
+  console.log('Successfully seeded 12 parking slots into MongoDB.');
 };
 
 /**
@@ -81,7 +66,6 @@ const seedDefaultAdmin = async () => {
       });
       console.log('Successfully created predefined Admin: admin@college.edu / admin123');
     } else {
-      // Ensure existing admin account retains the Admin role
       if (existingAdmin.role !== 'Admin') {
         existingAdmin.role = 'Admin';
         await existingAdmin.save();
@@ -93,22 +77,20 @@ const seedDefaultAdmin = async () => {
   }
 };
 
-// Connect to MongoDB and start the Express server
-mongoose
-  .connect(MONGODB_URI)
-  .then(async () => {
+const startServer = async () => {
+  try {
+    await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB successfully.');
-    // Check and seed initial slots & predefined admin
     await seedInitialSlots();
     await seedDefaultAdmin();
 
-    // Start server
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
     });
-  })
-  .catch((err) => {
-    console.error('MongoDB connection failed:', err.message);
-    console.error('Please ensure MongoDB Community Server is installed and running.');
+  } catch (error) {
+    console.error('Server startup failed:', error.message);
     process.exit(1);
-  });
+  }
+};
+
+startServer();

@@ -1,11 +1,8 @@
-import React from 'react';
-
-function CheckOutModal({ isOpen, slot, onClose, onConfirm, isSubmitting }) {
+function CheckOutModal({ isOpen, slot, currentTime, onClose, onConfirm, isSubmitting }) {
   if (!isOpen || !slot) return null;
 
-  // Calculate parking duration
   const occupiedDate = slot.occupiedAt ? new Date(slot.occupiedAt) : null;
-  const now = new Date();
+  const now = new Date(currentTime);
   let durationText = 'Just now';
   let totalMinutes = 0;
 
@@ -22,8 +19,6 @@ function CheckOutModal({ isOpen, slot, onClose, onConfirm, isSubmitting }) {
     }
   }
 
-  // Optional campus parking fee logic:
-  // First hour free for Students & Faculty; Visitors ₹20/hr, etc.
   const isFreeRole = slot.userRole === 'Faculty';
   let parkingFee = 'Free';
   if (!isFreeRole) {
@@ -49,7 +44,7 @@ function CheckOutModal({ isOpen, slot, onClose, onConfirm, isSubmitting }) {
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true">
-      <div className="modal-container checkout-modal">
+      <div className="modal-container">
         <div className="modal-header-row">
           <div className="modal-icon-wrapper modal-icon-wrapper--checkout">
             🏁
@@ -128,4 +123,3 @@ function CheckOutModal({ isOpen, slot, onClose, onConfirm, isSubmitting }) {
 }
 
 export default CheckOutModal;
-

@@ -1,15 +1,3 @@
-import React from 'react';
-
-/**
- * ConfirmationModal Component
- * Displays a clean confirmation dialog before performing irreversible actions like Reset.
- * 
- * @param {boolean} isOpen - Whether modal is visible
- * @param {string} title - Heading of modal
- * @param {string} message - Explanatory message
- * @param {Function} onConfirm - Callback if user clicks Reset
- * @param {Function} onCancel - Callback if user clicks Cancel
- */
 function ConfirmationModal({ isOpen, title, message, onConfirm, onCancel }) {
   if (!isOpen) return null;
 

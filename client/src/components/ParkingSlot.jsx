@@ -45,7 +45,6 @@ function ParkingSlot({ slot, onSlotClick, isUpdating, canControl }) {
         isUpdating ? 'slot-card--updating' : ''
       } ${!canControl ? 'slot-card--readonly' : 'slot-card--clickable'}`}
     >
-      {/* Slot Header */}
       <div className="slot-header">
         <span className="slot-number">{slot.slotNumber}</span>
         <span className={`slot-badge ${isAvailable ? 'slot-badge--available' : 'slot-badge--occupied'}`}>
@@ -54,7 +53,6 @@ function ParkingSlot({ slot, onSlotClick, isUpdating, canControl }) {
         </span>
       </div>
 
-      {/* Center Visual / Vehicle Details */}
       <div className="slot-visual-container">
         {isAvailable ? (
           <div className="slot-visual">
@@ -96,7 +94,6 @@ function ParkingSlot({ slot, onSlotClick, isUpdating, canControl }) {
         )}
       </div>
 
-      {/* Action Footer */}
       <div className="slot-footer">
         {canControl ? (
           <span className="slot-action-hint">
