@@ -47,7 +47,6 @@ const verifyAdmin = (req, res, next) => {
  */
 router.get('/', async (req, res) => {
   try {
-    // Fetch all slots from MongoDB and sort them in numerical order (P1 to P12)
     const slots = await Slot.find().sort({ slotOrder: 1 });
     res.status(200).json({
       success: true,
@@ -66,12 +65,12 @@ router.get('/', async (req, res) => {
 
 /**
  * @route   PATCH /api/slots/:id
- * @desc    Update a parking slot's status (Available <-> Occupied)
+ * @desc    Update a parking slot's status (Check-in or Check-out)
  * @access  Admin Only
  */
 router.patch('/:id', verifyAdmin, async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, vehicleNumber, vehicleType, userRole } = req.body;
 
   // Validate MongoDB ObjectId format
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -90,11 +89,32 @@ router.patch('/:id', verifyAdmin, async (req, res) => {
   }
 
   try {
-    // Find the slot by ID and update its status
+    const updateData = { status };
+
+    if (status === 'Occupied') {
+      // Check-in: require vehicleNumber and populate fields
+      if (!vehicleNumber || !vehicleNumber.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vehicle License Plate Number is required for check-in.',
+        });
+      }
+      updateData.vehicleNumber = vehicleNumber.trim().toUpperCase();
+      updateData.vehicleType = vehicleType || 'Car';
+      updateData.userRole = userRole || 'Student';
+      updateData.occupiedAt = new Date();
+    } else {
+      // Check-out: reset vehicle details
+      updateData.vehicleNumber = null;
+      updateData.vehicleType = null;
+      updateData.userRole = null;
+      updateData.occupiedAt = null;
+    }
+
     const updatedSlot = await Slot.findByIdAndUpdate(
       id,
-      { status },
-      { new: true, runValidators: true } // Return updated doc & run schema validations
+      updateData,
+      { new: true, runValidators: true }
     );
 
     if (!updatedSlot) {
@@ -126,10 +146,17 @@ router.patch('/:id', verifyAdmin, async (req, res) => {
  */
 router.post('/reset', verifyAdmin, async (req, res) => {
   try {
-    // Update all slot documents in MongoDB to status "Available"
-    await Slot.updateMany({}, { status: 'Available' });
+    await Slot.updateMany(
+      {},
+      {
+        status: 'Available',
+        vehicleNumber: null,
+        vehicleType: null,
+        userRole: null,
+        occupiedAt: null,
+      }
+    );
 
-    // Fetch the updated list to send back to the frontend
     const resetSlots = await Slot.find().sort({ slotOrder: 1 });
 
     res.status(200).json({

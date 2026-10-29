@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import ParkingSlot from './ParkingSlot';
 import ConfirmationModal from './ConfirmationModal';
+import CheckInModal from './CheckInModal';
+import CheckOutModal from './CheckOutModal';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = '/api/slots';
@@ -19,6 +21,10 @@ function ParkingDashboard() {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Modals for Check-In & Check-Out (Admin Only)
+  const [activeCheckInSlot, setActiveCheckInSlot] = useState(null);
+  const [activeCheckOutSlot, setActiveCheckOutSlot] = useState(null);
 
   // Fetch slots from backend on component mount
   useEffect(() => {
@@ -61,54 +67,110 @@ function ParkingDashboard() {
   };
 
   /**
-   * Toggle a slot's status between Available and Occupied
-   * Permitted ONLY for Admin role
+   * Slot click handler (Permitted ONLY for Admin role)
    */
-  const handleToggleSlot = async (slot) => {
+  const handleSlotClick = (slot) => {
     if (!canControl) {
-      showToast('⚠️ Access Denied: Only Campus Admin can toggle parking slots.');
+      showToast('⚠️ Access Denied: Only Campus Admin can check-in or check-out slots.');
       return;
     }
 
-    if (updatingSlotId) return; // Prevent double clicks during request
+    if (updatingSlotId) return;
 
-    const newStatus = slot.status === 'Available' ? 'Occupied' : 'Available';
-    setUpdatingSlotId(slot._id);
+    if (slot.status === 'Available') {
+      setActiveCheckInSlot(slot);
+    } else {
+      setActiveCheckOutSlot(slot);
+    }
+  };
+
+  /**
+   * Confirm vehicle Check-In (Admin Only)
+   */
+  const handleConfirmCheckIn = async (checkInData) => {
+    if (!activeCheckInSlot || !canControl) return;
+
+    const slotId = activeCheckInSlot._id;
+    const slotNumber = activeCheckInSlot.slotNumber;
+    setUpdatingSlotId(slotId);
 
     try {
-      const response = await fetch(`${API_URL}/${slot._id}`, {
+      const response = await fetch(`${API_URL}/${slotId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({
+          status: 'Occupied',
+          ...checkInData,
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Failed with HTTP ${response.status}`);
+        throw new Error(errorData.message || 'Check-in failed');
       }
 
       const result = await response.json();
-
       if (result.success && result.data) {
         setSlots((prevSlots) =>
-          prevSlots.map((item) => (item._id === slot._id ? result.data : item))
+          prevSlots.map((item) => (item._id === slotId ? result.data : item))
         );
-        showToast(`Slot ${slot.slotNumber} marked as ${newStatus} by Admin`);
+        showToast(`🚗 Vehicle ${checkInData.vehicleNumber} checked into ${slotNumber}`);
+        setActiveCheckInSlot(null);
       }
     } catch (err) {
-      console.error('Error toggling slot:', err);
-      showToast(`Error updating Slot ${slot.slotNumber}: ${err.message}`);
+      console.error('Check-in error:', err);
+      showToast(err.message || 'Error checking in vehicle.');
     } finally {
       setUpdatingSlotId(null);
     }
   };
 
   /**
-   * Reset all 12 parking slots to "Available"
-   * Permitted ONLY for Admin role
+   * Confirm vehicle Check-Out (Admin Only)
+   */
+  const handleConfirmCheckOut = async () => {
+    if (!activeCheckOutSlot || !canControl) return;
+
+    const slotId = activeCheckOutSlot._id;
+    const slotNumber = activeCheckOutSlot.slotNumber;
+    const vehicleNumber = activeCheckOutSlot.vehicleNumber;
+    setUpdatingSlotId(slotId);
+
+    try {
+      const response = await fetch(`${API_URL}/${slotId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: 'Available' }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to check out (HTTP ${response.status})`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        setSlots((prevSlots) =>
+          prevSlots.map((item) => (item._id === slotId ? result.data : item))
+        );
+        showToast(`✅ Slot ${slotNumber} released! ${vehicleNumber ? `(${vehicleNumber} checked out)` : ''}`);
+        setActiveCheckOutSlot(null);
+      }
+    } catch (err) {
+      console.error('Check-out error:', err);
+      showToast('Error checking out. Please try again.');
+    } finally {
+      setUpdatingSlotId(null);
+    }
+  };
+
+  /**
+   * Reset all 12 parking slots to "Available" (Admin Only)
    */
   const handleConfirmReset = async () => {
     if (!canControl) {
@@ -163,11 +225,11 @@ function ParkingDashboard() {
       <div className={`role-notice-banner ${canControl ? 'role-notice-admin' : 'role-notice-viewer'}`}>
         {canControl ? (
           <span>
-            🛡️ <strong>Admin Control Active:</strong> Logged in as <strong>{user?.name}</strong>. You have permission to mark slots as Occupied/Available and reset parking.
+            🛡️ <strong>Admin Control Active:</strong> Logged in as <strong>{user?.name}</strong>. You have permission to Check-In, Check-Out, and Reset slots.
           </span>
         ) : (
           <span>
-            👁️ <strong>Read-Only Status View:</strong> {isAuthenticated ? `Logged in as ${user?.name} (${user?.role}).` : 'Viewing as Campus Guest.'} Slot status is live. Only Campus Admin can mark slots as occupied or available.
+            👁️ <strong>Read-Only Status View:</strong> {isAuthenticated ? `Logged in as ${user?.name} (${user?.role}).` : 'Viewing as Campus Guest.'} Slot status is live. Only Campus Admin can perform check-in or check-out.
           </span>
         )}
       </div>
@@ -236,7 +298,7 @@ function ParkingDashboard() {
                   <ParkingSlot
                     key={slot._id}
                     slot={slot}
-                    onToggle={handleToggleSlot}
+                    onSlotClick={handleSlotClick}
                     isUpdating={updatingSlotId === slot._id}
                     canControl={canControl}
                   />
@@ -258,7 +320,7 @@ function ParkingDashboard() {
           </span>
           <span className="legend-item">
             {canControl ? (
-              <span>💡 <em>Click any card to change its occupancy</em></span>
+              <span>💡 <em>Click an available slot to Check-In, or an occupied slot to Check-Out</em></span>
             ) : (
               <span>🔒 <em>Display-only status • Controls reserved for Admin</em></span>
             )}
@@ -269,12 +331,34 @@ function ParkingDashboard() {
         </p>
       </footer>
 
+      {/* Check-In Modal (Admin Only) */}
+      {canControl && (
+        <CheckInModal
+          isOpen={Boolean(activeCheckInSlot)}
+          slot={activeCheckInSlot}
+          onClose={() => setActiveCheckInSlot(null)}
+          onConfirm={handleConfirmCheckIn}
+          isSubmitting={Boolean(updatingSlotId)}
+        />
+      )}
+
+      {/* Check-Out Summary Modal (Admin Only) */}
+      {canControl && (
+        <CheckOutModal
+          isOpen={Boolean(activeCheckOutSlot)}
+          slot={activeCheckOutSlot}
+          onClose={() => setActiveCheckOutSlot(null)}
+          onConfirm={handleConfirmCheckOut}
+          isSubmitting={Boolean(updatingSlotId)}
+        />
+      )}
+
       {/* Confirmation Modal for Reset (Admin Only) */}
       {canControl && (
         <ConfirmationModal
           isOpen={isResetModalOpen}
           title="Reset Parking Area?"
-          message="Are you sure you want to reset all 12 parking slots back to 'Available'? This will update the MongoDB database."
+          message="Are you sure you want to reset all 12 parking slots back to 'Available'? This will clear all checked-in vehicles in MongoDB."
           onConfirm={handleConfirmReset}
           onCancel={() => setIsResetModalOpen(false)}
         />

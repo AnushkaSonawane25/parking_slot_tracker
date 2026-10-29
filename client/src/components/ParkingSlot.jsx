@@ -2,29 +2,34 @@ import React from 'react';
 
 /**
  * ParkingSlot Component
- * Renders a parking slot card.
+ * Renders an interactive parking slot card showing its number, status, vehicle details, and action prompts.
  * 
- * @param {Object} slot - Slot data object containing _id, slotNumber, status
- * @param {Function} onToggle - Callback triggered when card is clicked (Admin only)
+ * @param {Object} slot - Slot data object containing _id, slotNumber, status, vehicle details
+ * @param {Function} onSlotClick - Callback triggered when card is clicked (Admin only)
  * @param {boolean} isUpdating - Indicates whether this specific slot is currently saving
  * @param {boolean} canControl - True if user has Admin role; false for Students/read-only viewers
  */
-function ParkingSlot({ slot, onToggle, isUpdating, canControl }) {
+function ParkingSlot({ slot, onSlotClick, isUpdating, canControl }) {
   const isAvailable = slot.status === 'Available';
 
-  // Handle keyboard accessibility for Admins
   const handleKeyDown = (e) => {
     if (!canControl) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onToggle(slot);
+      onSlotClick(slot);
     }
   };
 
   const handleClick = () => {
-    if (canControl) {
-      onToggle(slot);
+    if (canControl && onSlotClick) {
+      onSlotClick(slot);
     }
+  };
+
+  const getVehicleIcon = () => {
+    if (slot.vehicleType === 'Bike / Two-Wheeler') return '🏍️';
+    if (slot.vehicleType === 'EV') return '⚡';
+    return '🚗';
   };
 
   return (
@@ -32,7 +37,7 @@ function ParkingSlot({ slot, onToggle, isUpdating, canControl }) {
       role={canControl ? 'button' : 'region'}
       tabIndex={canControl ? 0 : -1}
       aria-label={`Parking slot ${slot.slotNumber}, currently ${slot.status}. ${
-        canControl ? 'Click to change status.' : 'Status view only.'
+        canControl ? 'Click to manage.' : 'Status view only.'
       }`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -49,34 +54,57 @@ function ParkingSlot({ slot, onToggle, isUpdating, canControl }) {
         </span>
       </div>
 
-      {/* Car Icon Visualization */}
-      <div className="slot-visual">
-        <svg
-          className="car-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3.5A2 2 0 0 1 8.2 2.5h7.6a2 2 0 0 1 1.7 1L19.5 7H21a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2" />
-          <circle cx="7" cy="17" r="3" />
-          <path d="M10 17h4" />
-          <circle cx="17" cy="17" r="3" />
-          <path d="M6 7l1.5-3h9L18 7" />
-        </svg>
+      {/* Center Visual / Vehicle Details */}
+      <div className="slot-visual-container">
+        {isAvailable ? (
+          <div className="slot-visual">
+            <svg
+              className="car-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.5l2-3.5A2 2 0 0 1 8.2 2.5h7.6a2 2 0 0 1 1.7 1L19.5 7H21a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2" />
+              <circle cx="7" cy="17" r="3" />
+              <path d="M10 17h4" />
+              <circle cx="17" cy="17" r="3" />
+              <path d="M6 7l1.5-3h9L18 7" />
+            </svg>
+            <span className="empty-slot-label">Empty Slot</span>
+          </div>
+        ) : (
+          <div className="slot-occupied-info">
+            <div className="vehicle-badge-pill">
+              <span>{getVehicleIcon()}</span>
+              <span>{slot.vehicleType || 'Car'}</span>
+            </div>
+            <div className="vehicle-plate-box">
+              <span className="plate-prefix">IND</span>
+              <span className="plate-text">{slot.vehicleNumber || 'OCCUPIED'}</span>
+            </div>
+            {slot.userRole && (
+              <span className="slot-role-tag">
+                {slot.userRole === 'Student' && '🎓 Student'}
+                {slot.userRole === 'Faculty' && '👨‍🏫 Faculty'}
+                {slot.userRole === 'Visitor' && '👥 Visitor'}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Action Prompt / Read-Only Status Display */}
+      {/* Action Footer */}
       <div className="slot-footer">
         {canControl ? (
           <span className="slot-action-hint">
             {isUpdating
               ? 'Updating...'
               : isAvailable
-              ? 'Click to Mark Occupied'
-              : 'Click to Mark Available'}
+              ? '👉 Click to Check In'
+              : '🏁 Click to Check Out'}
           </span>
         ) : (
           <span className="slot-status-display">

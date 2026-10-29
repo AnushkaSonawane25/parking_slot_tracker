@@ -26,6 +26,29 @@ const slotSchema = new mongoose.Schema(
       },
       default: 'Available',
     },
+    // Vehicle license plate / registration number
+    vehicleNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    // Vehicle category
+    vehicleType: {
+      type: String,
+      enum: ['Car', 'Bike / Two-Wheeler', 'EV', null],
+      default: null,
+    },
+    // Campus user role
+    userRole: {
+      type: String,
+      enum: ['Student', 'Faculty', 'Visitor', null],
+      default: null,
+    },
+    // Timestamp when the slot was occupied
+    occupiedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     // Automatically adds createdAt and updatedAt timestamps
