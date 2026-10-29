@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
 import ParkingSlot from './components/ParkingSlot';
 import ConfirmationModal from './components/ConfirmationModal';
+import CheckInModal from './components/CheckInModal';
+import CheckOutModal from './components/CheckOutModal';
 import './App.css';
 
 // Base API endpoint for the backend server
@@ -18,6 +20,10 @@ function App() {
   const [isResetting, setIsResetting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
+  // Modal states for Check-In & Check-Out
+  const [activeCheckInSlot, setActiveCheckInSlot] = useState(null);
+  const [activeCheckOutSlot, setActiveCheckOutSlot] = useState(null);
+
   // Fetch slots from backend on component mount
   useEffect(() => {
     fetchSlots();
@@ -28,7 +34,7 @@ function App() {
     setToastMessage(message);
     setTimeout(() => {
       setToastMessage(null);
-    }, 3000);
+    }, 3500);
   };
 
   /**
@@ -59,40 +65,98 @@ function App() {
   };
 
   /**
-   * Toggle a slot's status between Available and Occupied
-   * Triggered when a user clicks any parking slot card
+   * Trigger modal on slot card click:
+   * - If Available: Open Check-In Modal
+   * - If Occupied: Open Check-Out Summary Modal
    */
-  const handleToggleSlot = async (slot) => {
-    if (updatingSlotId) return; // Prevent double clicks during network request
+  const handleSlotClick = (slot) => {
+    if (updatingSlotId) return;
 
-    const newStatus = slot.status === 'Available' ? 'Occupied' : 'Available';
-    setUpdatingSlotId(slot._id);
+    if (slot.status === 'Available') {
+      setActiveCheckInSlot(slot);
+    } else {
+      setActiveCheckOutSlot(slot);
+    }
+  };
+
+  /**
+   * Execute Check-In with vehicle details
+   */
+  const handleConfirmCheckIn = async (checkInData) => {
+    if (!activeCheckInSlot) return;
+
+    const slotId = activeCheckInSlot._id;
+    const slotNumber = activeCheckInSlot.slotNumber;
+    setUpdatingSlotId(slotId);
 
     try {
-      const response = await fetch(`${API_URL}/${slot._id}`, {
+      const response = await fetch(`${API_URL}/${slotId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({
+          status: 'Occupied',
+          ...checkInData,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to update status (HTTP ${response.status})`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Check-in failed');
       }
 
       const result = await response.json();
-
       if (result.success && result.data) {
-        // Update state with newly modified slot from database
         setSlots((prevSlots) =>
-          prevSlots.map((item) => (item._id === slot._id ? result.data : item))
+          prevSlots.map((item) => (item._id === slotId ? result.data : item))
         );
-        showToast(`Slot ${slot.slotNumber} is now ${newStatus}`);
+        showToast(`🚗 Vehicle ${checkInData.vehicleNumber} checked into ${slotNumber}`);
+        setActiveCheckInSlot(null);
       }
     } catch (err) {
-      console.error('Error toggling slot:', err);
-      showToast(`Error updating Slot ${slot.slotNumber}. Please try again.`);
+      console.error('Check-in error:', err);
+      showToast(err.message || 'Error checking in vehicle.');
+    } finally {
+      setUpdatingSlotId(null);
+    }
+  };
+
+  /**
+   * Execute Check-Out and release slot
+   */
+  const handleConfirmCheckOut = async () => {
+    if (!activeCheckOutSlot) return;
+
+    const slotId = activeCheckOutSlot._id;
+    const slotNumber = activeCheckOutSlot.slotNumber;
+    const vehicleNumber = activeCheckOutSlot.vehicleNumber;
+    setUpdatingSlotId(slotId);
+
+    try {
+      const response = await fetch(`${API_URL}/${slotId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'Available' }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to check out (HTTP ${response.status})`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        setSlots((prevSlots) =>
+          prevSlots.map((item) => (item._id === slotId ? result.data : item))
+        );
+        showToast(`✅ Slot ${slotNumber} released! ${vehicleNumber ? `(${vehicleNumber} checked out)` : ''}`);
+        setActiveCheckOutSlot(null);
+      }
+    } catch (err) {
+      console.error('Check-out error:', err);
+      showToast('Error checking out. Please try again.');
     } finally {
       setUpdatingSlotId(null);
     }
@@ -153,7 +217,7 @@ function App() {
           isResetting={isResetting}
         />
 
-        {/* Temporary Feedback Notification Toast */}
+        {/* Feedback Notification Toast */}
         {toastMessage && (
           <div className="toast-notification" role="status" aria-live="polite">
             <span className="toast-icon">ℹ️</span>
@@ -205,7 +269,7 @@ function App() {
                     <ParkingSlot
                       key={slot._id}
                       slot={slot}
-                      onToggle={handleToggleSlot}
+                      onSlotClick={handleSlotClick}
                       isUpdating={updatingSlotId === slot._id}
                     />
                   ))}
@@ -225,7 +289,7 @@ function App() {
               <span className="legend-box legend-box--occupied"></span> Occupied: Red
             </span>
             <span className="legend-item">
-              💡 <em>Click any card to change its occupancy</em>
+              💡 <em>Click an empty slot to Check-In, or an occupied slot to Check-Out</em>
             </span>
           </div>
           <p className="footer-credits">
@@ -234,11 +298,29 @@ function App() {
         </footer>
       </div>
 
+      {/* Check-In Modal */}
+      <CheckInModal
+        isOpen={Boolean(activeCheckInSlot)}
+        slot={activeCheckInSlot}
+        onClose={() => setActiveCheckInSlot(null)}
+        onConfirm={handleConfirmCheckIn}
+        isSubmitting={Boolean(updatingSlotId)}
+      />
+
+      {/* Check-Out Summary Modal */}
+      <CheckOutModal
+        isOpen={Boolean(activeCheckOutSlot)}
+        slot={activeCheckOutSlot}
+        onClose={() => setActiveCheckOutSlot(null)}
+        onConfirm={handleConfirmCheckOut}
+        isSubmitting={Boolean(updatingSlotId)}
+      />
+
       {/* Confirmation Modal for Reset */}
       <ConfirmationModal
         isOpen={isResetModalOpen}
         title="Reset Parking Area?"
-        message="Are you sure you want to reset all 12 parking slots back to 'Available'? This will update the MongoDB database."
+        message="Are you sure you want to reset all 12 parking slots back to 'Available'? This will clear all checked-in vehicles in MongoDB."
         onConfirm={handleConfirmReset}
         onCancel={() => setIsResetModalOpen(false)}
       />
