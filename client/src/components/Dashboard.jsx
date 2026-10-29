@@ -1,10 +1,5 @@
-import React from 'react';
 import SummaryCard from './SummaryCard';
 
-/**
- * Dashboard Component
- * Contains the header, summary statistics cards, filter buttons, and reset trigger.
- */
 function Dashboard({
   totalCount,
   availableCount,
@@ -16,18 +11,16 @@ function Dashboard({
 }) {
   return (
     <header className="dashboard-header">
-      {/* Title & Tagline */}
       <div className="title-area">
         <div className="title-with-badge">
           <span className="campus-badge">Campus Facility</span>
           <h1 className="main-title">College Parking Slot Tracker</h1>
         </div>
         <p className="main-subtitle">
-          Real-time parking status monitor for students, faculty, and visitors. Click any slot to toggle availability.
+          Real-time parking status monitor for students, faculty, and visitors. Check in to an available slot or check out of an occupied slot.
         </p>
       </div>
 
-      {/* Summary Metric Cards */}
       <div className="summary-grid">
         <SummaryCard
           title="Total Parking Slots"
@@ -64,7 +57,6 @@ function Dashboard({
         />
       </div>
 
-      {/* Control Actions: Filters & Reset Button */}
       <div className="controls-bar">
         <div className="filter-group">
           <span className="filter-label">Filter View:</span>

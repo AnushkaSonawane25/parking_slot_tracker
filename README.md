@@ -1,6 +1,6 @@
 # College Parking Slot Tracker 🚗
 
-A full-stack, beginner-friendly web application designed for a **Web Technology Practical Mini-Project**. This application allows campus students, faculty, and visitors to track real-time parking slot availability (P1 to P12), manually toggle slot occupancy with instant visual feedback, filter slots by status, and reset the parking layout. All parking data persists directly in a local MongoDB database.
+A full-stack parking management application for a college campus. Students, faculty, and visitors can check vehicles into available slots and review the parking session when checking out. Slot availability and vehicle details are stored in MongoDB.
 
 ---
 
@@ -13,17 +13,18 @@ A full-stack, beginner-friendly web application designed for a **Web Technology 
    - Displays 12 designated campus slots numbered `P1` through `P12`.
    - Clear visual indicators: **Green** for Available, **Red** for Occupied.
    - Distinct car icons and status badges on every slot card.
-   - Click any card to toggle between *Available* and *Occupied*.
+   - Check into an available slot with a vehicle plate, vehicle type, and campus role.
+   - Check out an occupied slot after reviewing its session summary.
 3. **Filter System**:
    - Filter slots by **All Slots**, **Available**, or **Occupied**.
    - Filtering dynamically adjusts the view without mutating underlying data.
 4. **Safe Reset Functionality**:
-   - One-click **Reset Parking** button restores all 12 slots to "Available".
-   - Includes a confirmation dialog modal to prevent accidental resets.
+   - One-click **Reset Parking** button restores all slots to "Available" and clears vehicle details.
+   - Includes a confirmation dialog to prevent accidental resets.
 5. **Database Persistence**:
    - Backed by MongoDB using Mongoose.
    - Page refresh or server restart retains the last recorded parking statuses.
-   - Automatic seeding on initial server startup (seeds 12 slots without creating duplicates).
+   - Automatically seeds 12 slots (P1-P12) when the database is empty.
 
 ---
 
@@ -51,9 +52,10 @@ A full-stack, beginner-friendly web application designed for a **Web Technology 
 ```text
 parking-slot-tracker/
 ├── client/                     # Frontend (React + Vite)
-│   ├── public/                 # Static assets
 │   ├── src/
 │   │   ├── components/         # Modular React components
+│   │   │   ├── CheckInModal.jsx
+│   │   │   ├── CheckOutModal.jsx
 │   │   │   ├── ConfirmationModal.jsx
 │   │   │   ├── Dashboard.jsx
 │   │   │   ├── ParkingSlot.jsx
@@ -63,6 +65,7 @@ parking-slot-tracker/
 │   │   ├── index.css           # Global CSS variables & typography
 │   │   └── main.jsx            # React root mount point
 │   ├── index.html              # HTML entry page
+│   ├── package-lock.json       # Locked frontend dependencies
 │   ├── package.json            # Frontend dependencies & scripts
 │   └── vite.config.js          # Vite config with API proxy
 ├── server/                     # Backend (Node.js + Express)
@@ -70,8 +73,8 @@ parking-slot-tracker/
 │   │   └── Slot.js             # Mongoose schema for parking slots
 │   ├── routes/
 │   │   └── slotRoutes.js       # Express REST API routes
-│   ├── .env                    # Local environment variables
-│   ├── .env.example            # Sample configuration template
+│   ├── .env.example            # Sample configuration (copy to .env)
+│   ├── package-lock.json       # Locked backend dependencies
 │   ├── package.json            # Backend dependencies & scripts
 │   └── server.js               # Main Express entry point & DB seeding
 ├── .gitignore                  # Git ignore rules
@@ -110,11 +113,14 @@ Open **two separate terminal windows** (one for the server and one for the clien
 # 1. Navigate to the server folder
 cd server
 
-# 2. Install dependencies (express, mongoose, cors, dotenv)
+# 2. Install dependencies
 npm install
 
-# 3. Start the backend server
-node server.js
+# 3. Create your local environment file from the example
+cp .env.example .env
+
+# 4. Start the backend server
+npm start
 ```
 
 You should see:
@@ -130,7 +136,7 @@ Server is running on http://localhost:5000
 # 1. Navigate to the client folder
 cd client
 
-# 2. Install dependencies (react, react-dom, vite)
+# 2. Install dependencies
 npm install
 
 # 3. Start the Vite development server
@@ -156,8 +162,8 @@ Base URL: `http://localhost:5000/api/slots`
 | Method | Endpoint | Description | Request Body | Response Format |
 |---|---|---|---|---|
 | **GET** | `/api/slots` | Retrieve all 12 slots sorted numerically | None | `{ success: true, count: 12, data: [...] }` |
-| **PATCH** | `/api/slots/:id` | Toggle a slot's status | `{ "status": "Occupied" }` | `{ success: true, message: "...", data: {...} }` |
-| **POST** | `/api/slots/reset` | Restore all 12 slots to "Available" | None | `{ success: true, message: "...", data: [...] }` |
+| **PATCH** | `/api/slots/:id` | Check in or check out a vehicle | Check-in: `{ "status": "Occupied", "vehicleNumber": "MH 12 AB 1234", "vehicleType": "Car", "userRole": "Student" }`; check-out: `{ "status": "Available" }` | `{ success: true, message: "...", data: {...} }` |
+| **POST** | `/api/slots/reset` | Restore all slots to "Available" and clear vehicle details | None | `{ success: true, message: "...", data: [...] }` |
 
 ---
 

@@ -1,14 +1,3 @@
-import React from 'react';
-
-/**
- * SummaryCard Component
- * Displays a single metric card (Total Slots, Available Slots, Occupied Slots)
- * 
- * @param {string} title - Label for the metric
- * @param {number} count - Calculated count value
- * @param {string} type - Card style type ('total' | 'available' | 'occupied')
- * @param {React.ReactNode} icon - SVG or text icon
- */
 function SummaryCard({ title, count, type, icon }) {
   return (
     <div className={`summary-card summary-card--${type}`}>

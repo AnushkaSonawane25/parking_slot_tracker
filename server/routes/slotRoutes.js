@@ -3,10 +3,6 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const Slot = require('../models/Slot');
 
-/**
- * @route   GET /api/slots
- * @desc    Get all 12 parking slots sorted by slotOrder
- */
 router.get('/', async (req, res) => {
   try {
     const slots = await Slot.find().sort({ slotOrder: 1 });
@@ -25,15 +21,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * @route   PATCH /api/slots/:id
- * @desc    Update a parking slot's status (Check-in or Check-out)
- */
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
   const { status, vehicleNumber, vehicleType, userRole } = req.body;
 
-  // Validate MongoDB ObjectId format
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
       success: false,
@@ -41,7 +32,6 @@ router.patch('/:id', async (req, res) => {
     });
   }
 
-  // Validate status value
   if (!status || !['Available', 'Occupied'].includes(status)) {
     return res.status(400).json({
       success: false,
@@ -53,8 +43,7 @@ router.patch('/:id', async (req, res) => {
     const updateData = { status };
 
     if (status === 'Occupied') {
-      // Check-in: require vehicleNumber and populate fields
-      if (!vehicleNumber || !vehicleNumber.trim()) {
+      if (typeof vehicleNumber !== 'string' || !vehicleNumber.trim()) {
         return res.status(400).json({
           success: false,
           message: 'Vehicle License Plate Number is required for check-in.',
@@ -65,7 +54,6 @@ router.patch('/:id', async (req, res) => {
       updateData.userRole = userRole || 'Student';
       updateData.occupiedAt = new Date();
     } else {
-      // Check-out: reset vehicle details
       updateData.vehicleNumber = null;
       updateData.vehicleType = null;
       updateData.userRole = null;
@@ -100,10 +88,6 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-/**
- * @route   POST /api/slots/reset
- * @desc    Reset all parking slots to "Available"
- */
 router.post('/reset', async (req, res) => {
   try {
     await Slot.updateMany(

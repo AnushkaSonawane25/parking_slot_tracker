@@ -1,9 +1,3 @@
-import React from 'react';
-
-/**
- * ParkingSlot Component
- * Renders an interactive parking slot card showing its number, status, vehicle details, and action prompts.
- */
 function ParkingSlot({ slot, onSlotClick, isUpdating }) {
   const isAvailable = slot.status === 'Available';
 
@@ -31,7 +25,6 @@ function ParkingSlot({ slot, onSlotClick, isUpdating }) {
         isUpdating ? 'slot-card--updating' : ''
       }`}
     >
-      {/* Slot Header */}
       <div className="slot-header">
         <span className="slot-number">{slot.slotNumber}</span>
         <span className={`slot-badge ${isAvailable ? 'slot-badge--available' : 'slot-badge--occupied'}`}>
@@ -40,7 +33,6 @@ function ParkingSlot({ slot, onSlotClick, isUpdating }) {
         </span>
       </div>
 
-      {/* Center Visual / Vehicle Details */}
       <div className="slot-visual-container">
         {isAvailable ? (
           <div className="slot-visual">
@@ -82,7 +74,6 @@ function ParkingSlot({ slot, onSlotClick, isUpdating }) {
         )}
       </div>
 
-      {/* Action Footer */}
       <div className="slot-footer">
         <span className="slot-action-hint">
           {isUpdating
