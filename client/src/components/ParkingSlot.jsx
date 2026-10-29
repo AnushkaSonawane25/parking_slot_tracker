@@ -1,9 +1,27 @@
-function ParkingSlot({ slot, onSlotClick, isUpdating }) {
+import React from 'react';
+
+/**
+ * ParkingSlot Component
+ * Renders an interactive parking slot card showing its number, status, vehicle details, and action prompts.
+ * 
+ * @param {Object} slot - Slot data object containing _id, slotNumber, status, vehicle details
+ * @param {Function} onSlotClick - Callback triggered when card is clicked (Admin only)
+ * @param {boolean} isUpdating - Indicates whether this specific slot is currently saving
+ * @param {boolean} canControl - True if user has Admin role; false for Students/read-only viewers
+ */
+function ParkingSlot({ slot, onSlotClick, isUpdating, canControl }) {
   const isAvailable = slot.status === 'Available';
 
   const handleKeyDown = (e) => {
+    if (!canControl) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
+      onSlotClick(slot);
+    }
+  };
+
+  const handleClick = () => {
+    if (canControl && onSlotClick) {
       onSlotClick(slot);
     }
   };
@@ -16,14 +34,16 @@ function ParkingSlot({ slot, onSlotClick, isUpdating }) {
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      aria-label={`Parking slot ${slot.slotNumber}, currently ${slot.status}.`}
-      onClick={() => onSlotClick(slot)}
+      role={canControl ? 'button' : 'region'}
+      tabIndex={canControl ? 0 : -1}
+      aria-label={`Parking slot ${slot.slotNumber}, currently ${slot.status}. ${
+        canControl ? 'Click to manage.' : 'Status view only.'
+      }`}
+      onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={`slot-card ${isAvailable ? 'slot-card--available' : 'slot-card--occupied'} ${
         isUpdating ? 'slot-card--updating' : ''
-      }`}
+      } ${!canControl ? 'slot-card--readonly' : 'slot-card--clickable'}`}
     >
       <div className="slot-header">
         <span className="slot-number">{slot.slotNumber}</span>
@@ -75,13 +95,19 @@ function ParkingSlot({ slot, onSlotClick, isUpdating }) {
       </div>
 
       <div className="slot-footer">
-        <span className="slot-action-hint">
-          {isUpdating
-            ? 'Updating...'
-            : isAvailable
-            ? '👉 Click to Check In'
-            : '🏁 Click to Check Out'}
-        </span>
+        {canControl ? (
+          <span className="slot-action-hint">
+            {isUpdating
+              ? 'Updating...'
+              : isAvailable
+              ? '👉 Click to Check In'
+              : '🏁 Click to Check Out'}
+          </span>
+        ) : (
+          <span className="slot-status-display">
+            {isAvailable ? '🟢 Available' : '🔴 Occupied'}
+          </span>
+        )}
       </div>
     </div>
   );
